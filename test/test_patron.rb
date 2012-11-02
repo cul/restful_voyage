@@ -5,7 +5,11 @@ class TestPatron < MiniTest::Unit::TestCase
   def test_uni_to_patron
     patron = Patron.new(uni: 'gb8', connection: default_connection)
     assert patron.exists?
-    assert_equal patron.patron_id, 29841
+    assert_equal 29841, patron.patron_id
+
+    patron = Patron.new(uni: 'jws2135', connection: default_connection)
+    assert patron.exists?
+    assert_equal 8547912, patron.patron_id
   end
 
   def test_bad_uni

@@ -7,6 +7,7 @@ module Voyager
       element_text = ->(element, css) { sub_el= element.at_css(css); sub_el ? sub_el.text : nil }
       element_attr = ->(element, name) { attr = element.attributes[name]; attr ? attr.value : nil }
       @can_renew = element_attr.(xml, 'canRenew') == "Y"
+      @title = element_text.(xml, 'title')
       @item_id = element_text.(xml, 'itemId')
       @item_type = element_text.(xml, 'itemtype')
       @barcode = element_text.(xml, 'itemBarcode')
