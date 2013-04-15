@@ -2,7 +2,7 @@ module Voyager
   class Patron
     attr_reader :connection
  
-    attr_reader :patron_id, :uni
+    attr_reader :patron_id, :uni, :first_name, :last_name
 
     def initialize(options = {})
       @connection = options.delete(:connection) || raise(ArgumentError.new("No connection passed."))
@@ -12,24 +12,35 @@ module Voyager
       if uni = options.delete(:uni)
         @uni = uni
         @patron_id = @connection.oracle_connection.retrieve_patron_id(@uni)[@uni]
-
-      elsif (patron_id = options.delete(:patron_id))
-        xml = @connection.get_xml("patron/#{patron_id}")
-        if xml.at_css('reply-text').text == "ok"
-          @patron_id = patron_id.to_i
-        end
-      else
-        raise ArgumentError.new("Must specify patron_id or uni")
+        raise(ArgumentError, "bad uni") if @patron_id.nil?
       end
+
+      patron_id_to_look_up = options.delete(:patron_id) || @patron_id
+
+      raise(ArgumentError, "must supply patron_id or uni") unless patron_id_to_look_up
+
+      nori = @connection.retrieve_hash("patron/#{patron_id_to_look_up}/patronInformation/address", true)
+      @first_name = nori['response']['address']['name']['firstName']
+      @last_name = nori['response']['address']['name']['lastName']
+      @patron_id = patron_id_to_look_up.to_i if @last_name
+    end
+
+    def reload_loans!
+      @loans = nil
+      loans
+    end
+
+    def renew_loan(db_key)
+      @connection.retrieve_hash("patron/#{patron_id}/circulationActions/loans/#{db_key}", true, :post)
     end
 
     def loans
       raise "Patron not found" unless self.exists?
 
       unless @loans 
-        xml = @connection.get_xml("patron/#{patron_id}/circulationActions/loans?view=full")
+        nori = @connection.retrieve_hash("patron/#{patron_id}/circulationActions/loans?view=full")
         
-        @loans = xml.css('loan').collect { |xml_node| Loan.new(@connection, xml_node) }
+        @loans = nori['response']['loans']['institution']['loan'].collect { |loan| Loan.new(@connection, loan) }
 
       end
 

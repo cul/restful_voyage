@@ -13,8 +13,9 @@ class TestPatron < MiniTest::Unit::TestCase
   end
 
   def test_bad_uni
-    patron = Patron.new(uni: 'xxxx215x', connection: default_connection)
-    assert !patron.exists?
+    assert_raises ArgumentError do
+      patron = Patron.new(uni: 'xxxx215x', connection: default_connection)
+    end
     
   end
 
@@ -41,9 +42,9 @@ class TestPatron < MiniTest::Unit::TestCase
 
   def test_loans
 
-    patron = Patron.new(uni: 'gb8', connection: default_connection)
-    assert_equal 2, patron.loans.length
-    raise patron.loans.first.inspect
+    patron = Patron.new(uni: 'jws2135', connection: default_connection)
+    assert patron.loans.length > 1
 
   end
+
 end
