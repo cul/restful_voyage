@@ -51,6 +51,8 @@ module Voyager
 
       end
 
+      @fines
+
     end
 
     def loans
