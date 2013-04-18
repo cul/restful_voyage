@@ -7,3 +7,4 @@ require 'nori'
 require File.join(File.dirname(__FILE__), "connection")
 require File.join(File.dirname(__FILE__), "patron")
 require File.join(File.dirname(__FILE__), "loan")
+require File.join(File.dirname(__FILE__), "fine")

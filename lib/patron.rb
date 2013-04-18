@@ -2,7 +2,7 @@ module Voyager
   class Patron
     attr_reader :connection
  
-    attr_reader :patron_id, :uni, :first_name, :last_name
+    attr_reader :patron_id, :uni, :first_name, :last_name, :fine_balance
 
     def initialize(options = {})
       @connection = options.delete(:connection) || raise(ArgumentError.new("No connection passed."))
@@ -32,6 +32,25 @@ module Voyager
 
     def renew_loan(db_key)
       @connection.retrieve_hash("patron/#{patron_id}/circulationActions/loans/#{db_key}", true, :post)
+    end
+
+
+    def fines
+      raise "Patron not found" unless self.exists?
+      unless @fines
+        nori = @connection.retrieve_hash("patron/#{patron_id}/circulationActions/debt/fines?view=full&institution=LOCAL")
+        fines = nori['response']['fines']
+
+        if fines
+          local = fines['institution']
+          @fine_balance = local['balance']['finesum']
+          @fines = local['fine'].collect { |fine| Fine.new(connection, fine) }
+
+
+        end
+
+      end
+
     end
 
     def loans
