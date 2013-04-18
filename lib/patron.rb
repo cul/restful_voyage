@@ -33,6 +33,44 @@ module Voyager
     def renew_loan(db_key)
       @connection.retrieve_hash("patron/#{patron_id}/circulationActions/loans/#{db_key}", true, :post)
     end
+    
+    def blocks
+      raise "Patron not found" unless self.exists?
+      unless @blocks
+        nori = @connection.retrieve_hash("patron/#{patron_id}/patronStatus/blocks?view=full")
+        blocks = nori['response']['blocks']
+
+        if blocks && blocks
+          block_list = blocks['institution']['borrowingBlock']
+          @blocks = Array.wrap(block_list).collect { |block| Block.new(connection, block) }
+
+
+        end
+
+      end
+
+      @blocks
+
+    end
+
+    def holds
+      raise "Patron not found" unless self.exists?
+      unless @holds
+        nori = @connection.retrieve_hash("patron/#{patron_id}/circulationActions/requests/holds?institution=LOCAL&view=full")
+        holds = nori['response']['holds']
+
+        if holds
+          local = holds['institution']
+          @holds = Array.wrap(local['hold']).collect { |hold| Hold.new(connection, hold['requestItem']) }
+
+
+        end
+
+      end
+
+      @holds
+
+    end
 
 
     def fines
@@ -44,7 +82,7 @@ module Voyager
         if fines
           local = fines['institution']
           @fine_balance = local['balance']['finesum']
-          @fines = local['fine'].collect { |fine| Fine.new(connection, fine) }
+          @fines = Array.wrap(local['fine']).collect { |fine| Fine.new(connection, fine) }
 
 
         end

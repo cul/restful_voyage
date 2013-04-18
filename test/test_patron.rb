@@ -41,4 +41,15 @@ class TestPatron < MiniTest::Unit::TestCase
 
   end
 
+  def test_holds
+    patron = Patron.new(uni: 'nna2109', connection: default_connection)
+    assert patron.holds.length > 0
+
+  end
+
+  def test_blocks
+    patron = Patron.new(uni: 'kea6', connection: default_connection)
+    assert patron.blocks
+
+  end
 end
