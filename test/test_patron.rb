@@ -52,4 +52,10 @@ class TestPatron < MiniTest::Unit::TestCase
     assert patron.blocks
 
   end
+
+
+  def test_request_for_record
+    patron = Patron.new(uni: 'jws2135', connection: default_connection)
+    assert patron.request_for_record(4256508)
+  end
 end

@@ -53,6 +53,26 @@ module Voyager
 
     end
 
+    def request_for_record(record_id)
+      raise "Patron not found" unless self.exists?
+      noko = @connection.retrieve_xml("record/#{record_id}?view=full&patron=#{patron_id}")
+
+      @request = {}
+  
+      if noko.css('record')
+        element_text = ->(element, css) { sub_el= element.at_css(css); sub_el ? sub_el.text : nil }
+
+        @request['title'] = element_text.(noko, "datafield[tag='245']>subfield[code=a]")
+        @request['recall'] = parse_request_for_record(noko.at_css('info[type=Recall]'))
+        @request['hold'] = parse_request_for_record(noko.at_css('info[type=HoldRequest]'))
+
+      end
+
+      @request
+
+      
+    end
+
     def holds
       raise "Patron not found" unless self.exists?
       unless @holds
@@ -108,6 +128,32 @@ module Voyager
 
     def exists?
       !@patron_id.nil?
+    end
+
+    private
+
+    def parse_request_for_record(xml)
+      element_text = ->(element, css) { sub_el= element.at_css(css); sub_el ? sub_el.text : nil }
+      element_attr = ->(element, name) { (attr = element.attributes[name]; attr ? attr.value : nil) }
+      element_css_attr = ->(element, css, name) { sub_el = element.at_css(css); sub_el ? (attr = sub_el.attributes[name]; attr ? attr.value : nil) : nil }
+
+      if xml && ((element_css_attr.(xml, "recall", "allowed") == "Y") || (element_css_attr.(xml, "hold", "allowed") == "Y"))
+        result = {}
+
+        result['dbkey'] = element_css_attr.(xml,'dbkey', 'code')
+
+        result['pickup_locations'] = xml.css('pickup-location').collect do |loc|
+          {code: element_attr.(loc,'code'), name: loc.text, default: element_attr.(loc,'default')}
+        end
+
+        result['items'] = xml.css('items>item').collect do |item|
+          {item_id: element_text.(item, 'item_id'), description: element_text.(item, 'description')}
+        end
+
+        result
+      else
+        nil
+      end
     end
   end
 end
